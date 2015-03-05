@@ -1,5 +1,19 @@
+
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+
+# # vagrant entries /etc/hosts
+# 172.16.2.160 mdns
+# 172.16.2.161 rdns
+# 172.16.2.161 cdns
+#
+#
+#  see issue https://github.com/mitchellh/vagrant/issues/1673
+#  regarding the warning 'stdin: is not a tty'
+#  with this commands
+#  config.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
+#  This starts bash as a non-login shell, but also tells it to source
+#  /etc/profile,
 
 # All Vagrant configuration is done below. The "2" in Vagrant.configure
 # configures the configuration version (we support older styles for
@@ -9,23 +23,38 @@ Vagrant.configure(2) do |config|
   # The most common configuration options are documented and commented below.
   # For a complete reference, please see the online documentation at
   # https://docs.vagrantup.com.
-  
+
   config.vm.define "dev1" do |dev1|
     dev1.vm.box = "ubuntu/trusty64"
-	config.vm.network "private_network", ip: "172.16.2.160"
+    dev1.vm.network "private_network", ip: "172.16.2.160"
+    dev1.vm.hostname = "mdns"
+
+    dev1.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
+
+    dev1.vm.provision "shell", path: "ssh-copy.sh"
+
+    #if Vagrant.has_plugin?("vagrant-proxyconf")
+      #de1.config.proxy.https    = ""
+      #dev1.config.proxy.no_proxy = "localhost,127.0.0.1,172.16.2.0,192.168.1.0,10.0.2.0"
+      #config.proxy.enabled = false
+    #end
   end
 
   config.vm.define "dev2" do |dev2|
     dev2.vm.box = "ubuntu/trusty64"
-	config.vm.network "private_network", ip: "172.16.2.161"
+    dev2.vm.network "private_network", ip: "172.16.2.161"
+    dev2.vm.hostname = "sdns"
+
+    dev2.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
+
+    dev2.vm.provision "shell", path: "ssh-copy.sh"
+
+    #if Vagrant.has_plugin?("vagrant-proxyconf")
+      #dev2.config.proxy.https    = ""
+      #dev2.config.proxy.no_proxy = "localhost,127.0.0.1,172.16.2.0,192.168.1.0,10.0.2.0"
+      #config.proxy.enabled = false
+    #end
   end
-    
-  if Vagrant.has_plugin?("vagrant-proxyconf")
-    config.proxy.https    = ""
-    config.proxy.no_proxy = "localhost,127.0.0.1,172.16.2.0,192.168.1.0,10.0.2.0"
-  end
-  
-  #config.proxy.enabled = false
 
   # Every Vagrant development environment requires a box. You can search for
   # boxes at https://atlas.hashicorp.com/search.
@@ -34,7 +63,7 @@ Vagrant.configure(2) do |config|
   # Disable automatic box update checking. If you disable this, then
   # boxes will only be checked for updates when the user runs
   # `vagrant box outdated`. This is not recommended.
-  config.vm.box_check_update = true
+  # config.vm.box_check_update = true
 
   # Create a forwarded port mapping which allows access to a specific port
   # within the machine from a port on the host machine. In the example below,
@@ -45,7 +74,7 @@ Vagrant.configure(2) do |config|
   # using a specific IP.
   # config.vm.network "private_network", ip: "192.168.33.10"
   # config.vm.network "private_network", ip: "10.0.2.160"
-  
+
   #config.vm.provider "virtualbox" do |vb|
     #vb.customize ["modifyvm", :id, "--natnet1", "devnet"]
 	#vb.customize ["modifyvm", :id, "--nic1", "natnetwork"]
