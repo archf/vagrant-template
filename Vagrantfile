@@ -25,35 +25,37 @@ Vagrant.configure(2) do |config|
   # https://docs.vagrantup.com.
 
   config.vm.define "dev1" do |dev1|
-    dev1.vm.box = "ubuntu/trusty64"
+    dev1.vm.box = "chef/fedora-20"
     dev1.vm.network "private_network", ip: "172.16.2.160"
+	dev1.vm.network "public_network"
     dev1.vm.hostname = "mdns"
 
     dev1.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
 
     dev1.vm.provision "shell", path: "ssh-copy.sh"
 
-    #if Vagrant.has_plugin?("vagrant-proxyconf")
-      #de1.config.proxy.https    = ""
-      #dev1.config.proxy.no_proxy = "localhost,127.0.0.1,172.16.2.0,192.168.1.0,10.0.2.0"
-      #config.proxy.enabled = false
-    #end
+    if Vagrant.has_plugin?("vagrant-proxyconf")
+      dev1.proxy.https    = ""
+      dev1.proxy.no_proxy = "localhost,127.0.0.1,172.16.2.0,192.168.1.0,10.0.2.0"
+      # config.proxy.enabled = false
+    end
   end
 
   config.vm.define "dev2" do |dev2|
-    dev2.vm.box = "ubuntu/trusty64"
+    dev2.vm.box = "chef/fedora-20"
     dev2.vm.network "private_network", ip: "172.16.2.161"
+	dev2.vm.network "public_network"
     dev2.vm.hostname = "sdns"
 
     dev2.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
 
     dev2.vm.provision "shell", path: "ssh-copy.sh"
 
-    #if Vagrant.has_plugin?("vagrant-proxyconf")
-      #dev2.config.proxy.https    = ""
-      #dev2.config.proxy.no_proxy = "localhost,127.0.0.1,172.16.2.0,192.168.1.0,10.0.2.0"
-      #config.proxy.enabled = false
-    #end
+    if Vagrant.has_plugin?("vagrant-proxyconf")
+      dev2.proxy.https    = ""
+      dev2.proxy.no_proxy = "localhost,127.0.0.1,172.16.2.0,192.168.1.0,10.0.2.0"
+      # config.proxy.enabled = false
+    end
   end
 
   # Every Vagrant development environment requires a box. You can search for
