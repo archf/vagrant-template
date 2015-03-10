@@ -26,8 +26,10 @@ Vagrant.configure(2) do |config|
 
   config.vm.define "dev1" do |dev1|
     dev1.vm.box = "chef/fedora-20"
-    dev1.vm.network "private_network", ip: "172.16.2.160"
+    
 	dev1.vm.network "public_network"
+	dev1.vm.network "private_network", ip: "172.16.2.160"
+	
     dev1.vm.hostname = "mdns"
 
     dev1.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
@@ -43,8 +45,10 @@ Vagrant.configure(2) do |config|
 
   config.vm.define "dev2" do |dev2|
     dev2.vm.box = "chef/fedora-20"
-    dev2.vm.network "private_network", ip: "172.16.2.161"
+    
 	dev2.vm.network "public_network"
+	dev2.vm.network "private_network", ip: "172.16.2.161"
+	
     dev2.vm.hostname = "sdns"
 
     dev2.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
