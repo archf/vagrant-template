@@ -1,131 +1,86 @@
-
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# # vagrant entries /etc/hosts
-# 172.16.2.160 mdns
-# 172.16.2.161 rdns
-# 172.16.2.161 cdns
-#
-#
-#  see issue https://github.com/mitchellh/vagrant/issues/1673
-#  regarding the warning 'stdin: is not a tty'
-#  with this commands
-#  config.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
-#  This starts bash as a non-login shell, but also tells it to source
-#  /etc/profile,
+# prefix that will be pre-pendend to every machines in the hosts list
 
-# All Vagrant configuration is done below. The "2" in Vagrant.configure
-# configures the configuration version (we support older styles for
-# backwards compatibility). Please don't change it unless you know what
-# you're doing.
+HOSTNAME_PREFIX = 'testbox'
+
+# ip: ip of 'netp' device
+# group: group name of ansible inventory the box will be part of
+hosts = [
+  {name: 'm1', ip: '192.168.56.71',
+   net: 'private_network', box: 'boxcutter/ubuntu1604', group: 'webserver'},
+  {name: 'm2', ip: '192.168.56.72',
+   net: 'private_network', box: 'bento/centos-7.1', group: 'db'}
+]
+
+###############################################################################
+# The only thing you will probably need to edit below this
+# point is the provisioner
+###############################################################################
+
 Vagrant.configure(2) do |config|
-  # The most common configuration options are documented and commented below.
-  # For a complete reference, please see the online documentation at
-  # https://docs.vagrantup.com.
 
-  config.vm.define "dev1" do |dev1|
-    dev1.vm.box = "chef/fedora-20"
-    
-	dev1.vm.network "public_network"
-	dev1.vm.network "private_network", ip: "172.16.2.160"
-	
-    dev1.vm.hostname = "mdns"
+  if Vagrant.has_plugin?("vagrant-hostmanager")
+    # hook to Vagrant up and vagrant destroy
+    config.hostmanager.enabled = true
 
-    dev1.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
+    # allow /etc/hosts file updating
+    config.hostmanager.manage_host = true
 
-    dev1.vm.provision "shell", path: "ssh-copy.sh"
+    # disable using the private network IP address
+    config.hostmanager.ignore_private_ip = false
 
-    if Vagrant.has_plugin?("vagrant-proxyconf")
-      dev1.proxy.https    = ""
-      dev1.proxy.no_proxy = "localhost,127.0.0.1,172.16.2.0,192.168.1.0,10.0.2.0"
-      # config.proxy.enabled = false
-    end
+    # include box that are up or boxes with private IP
+    config.hostmanager.include_offline = true
   end
 
-  config.vm.define "dev2" do |dev2|
-    dev2.vm.box = "chef/fedora-20"
-    
-	dev2.vm.network "public_network"
-	dev2.vm.network "private_network", ip: "172.16.2.161"
-	
-    dev2.vm.hostname = "sdns"
+ N=hosts.length
 
-    dev2.ssh.shell = "bash -c 'BASH_ENV=/etc/profile exec bash'"
+  (1..N).each do |machine_id|
 
-    dev2.vm.provision "shell", path: "ssh-copy.sh"
+    config.vm.define HOSTNAME_PREFIX + "-" + hosts[machine_id - 1][:name] do |node|
+    # config.vm.define HOSTNAME_PREFIX + "-m#{machine_id}" do |node|
 
-    if Vagrant.has_plugin?("vagrant-proxyconf")
-      dev2.proxy.https    = ""
-      dev2.proxy.no_proxy = "localhost,127.0.0.1,172.16.2.0,192.168.1.0,10.0.2.0"
-      # config.proxy.enabled = false
-    end
-  end
+      # box name
+      node.vm.box = hosts[machine_id - 1][:box]
+      # box hostname
+      node.vm.hostname = HOSTNAME_PREFIX + '-' + hosts[machine_id - 1][:name]
+      # box extra interface
+      node.vm.network hosts[machine_id - 1][:net], ip: hosts[machine_id - 1][:ip]
 
-  # Every Vagrant development environment requires a box. You can search for
-  # boxes at https://atlas.hashicorp.com/search.
-  # config.vm.box = "ubuntu/trusty64"
+      # Only execute once the Ansible provisioner (all machines up and ready)
+      if machine_id == N
 
-  # Disable automatic box update checking. If you disable this, then
-  # boxes will only be checked for updates when the user runs
-  # `vagrant box outdated`. This is not recommended.
-  # config.vm.box_check_update = true
+        config.vm.provision 'ansible' do |ansible|
 
-  # Create a forwarded port mapping which allows access to a specific port
-  # within the machine from a port on the host machine. In the example below,
-  # accessing "localhost:8080" will access port 80 on the guest machine.
-  # config.vm.network "forwarded_port", guest: 80, host: 8080
+          ansible.groups = {}
+          ansible.host_vars = {}
 
-  # Create a private network, which allows host-only access to the machine
-  # using a specific IP.
-  # config.vm.network "private_network", ip: "192.168.33.10"
-  # config.vm.network "private_network", ip: "10.0.2.160"
+          # create ansible inventory groups to allow group_vars
+          # box name must be valid
+          for m in hosts do
+            if ansible.groups.has_key?(m[:group])
+              # append to list
+              ansible.groups[m[:group]].push(HOSTNAME_PREFIX + '-' + m[:name])
+            else
+              # add new key
+              ansible.groups[m[:group]] = [HOSTNAME_PREFIX + '-' + m[:name]]
+            end
 
-  #config.vm.provider "virtualbox" do |vb|
-    #vb.customize ["modifyvm", :id, "--natnet1", "devnet"]
-	#vb.customize ["modifyvm", :id, "--nic1", "natnetwork"]
-	#vb.customize ["modifyvm", :id, "--natnet2", "devnet"]
-	#vb.customize ["modifyvm", :id, "--nat-network1", "devnet"]
-  #end
+            ansible.host_vars[m[:name]] = {ansible_ssh_host:  m[:ip]}
 
-  # Create a public network, which generally matched to bridged network.
-  # Bridged networks make the machine appear as another physical device on
-  # your network.
-  # config.vm.network "public_network"
+          end # end groups
 
-  # Share an additional folder to the guest VM. The first argument is
-  # the path on the host to the actual folder. The second argument is
-  # the path on the guest to mount the folder. And the optional third
-  # argument is a set of non-required options.
-  # config.vm.synced_folder "../data", "/vagrant_data"
+          # run the provisionner
+          # ansible.verbose = 'v'
+          # ansible.extra_vars = {users_debug: 'True'}
+          ansible.limit = 'all'
+          ansible.playbook = 'test.yml'
+        end #ansible vm.provision
 
-  # Provider-specific configuration so you can fine-tune various
-  # backing providers for Vagrant. These expose provider-specific options.
-  # Example for VirtualBox:
-  #
-  # config.vm.provider "virtualbox" do |vb|
-  #   # Display the VirtualBox GUI when booting the machine
-  #   vb.gui = true
-  #
-  #   # Customize the amount of memory on the VM:
-  #   vb.memory = "1024"
-  # end
-  #
-  # View the documentation for the provider you are using for more
-  # information on available options.
+      end # if machine_id == N
 
-  # Define a Vagrant Push strategy for pushing to Atlas. Other push strategies
-  # such as FTP and Heroku are also available. See the documentation at
-  # https://docs.vagrantup.com/v2/push/atlas.html for more information.
-  # config.push.define "atlas" do |push|
-  #   push.app = "YOUR_ATLAS_USERNAME/YOUR_APPLICATION_NAME"
-  # end
-
-  # Enable provisioning with a shell script. Additional provisioners such as
-  # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
-  # documentation for more information about their specific syntax and use.
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   sudo apt-get update
-  #   sudo apt-get install -y apache2
-  # SHELL
+    end # machine_id if node.vm
+  end # each loop
 end
