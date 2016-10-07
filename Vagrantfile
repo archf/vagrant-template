@@ -57,7 +57,7 @@ Vagrant.configure(2) do |config|
       # Only execute once the Ansible provisioner (all machines up and ready)
       if machine_id == N
 
-        config.vm.provision 'ansible' do |ansible|
+        config.vm.provision :ansible do |ansible|
 
           ansible.groups = {}
           ansible.host_vars = {}
