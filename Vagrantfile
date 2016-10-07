@@ -81,7 +81,9 @@ Vagrant.configure(2) do |config|
 
           # ansible.verbose = 'v'
           # ansible.extra_vars = {users_debug: 'True'}
-          # ansible.limit = 'all'
+
+          # Disable default limit to connect to all the machines
+          ansible.limit = 'all'
           ansible.playbook = 'test.yml'
 
         end #ansible vm.provision
