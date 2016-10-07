@@ -3,15 +3,18 @@
 
 # prefix that will be pre-pendend to every machines in the hosts list
 
-HOSTNAME_PREFIX = 'testbox'
+HOSTNAME_PREFIX = 'demo'
+DOMAIN = 'vlan'
 
 # ip: ip of 'netp' device
 # group: group name of ansible inventory the box will be part of
 hosts = [
   {name: 'm1', ip: '192.168.56.71',
-   net: 'private_network', box: 'boxcutter/ubuntu1604', group: 'webserver'},
+   net: 'private_network', box: 'bento/centos-7.1', group: 'webserver'},
   {name: 'm2', ip: '192.168.56.72',
-   net: 'private_network', box: 'bento/centos-7.1', group: 'db'}
+   net: 'private_network', box: 'bento/centos-7.1', group: 'webserver'},
+  {name: 'm3', ip: '192.168.56.73',
+   net: 'private_network', box: 'boxcutter/ubuntu1604', group: 'dbserver'}
 ]
 
 ###############################################################################
@@ -45,7 +48,9 @@ Vagrant.configure(2) do |config|
       # box name
       node.vm.box = hosts[machine_id - 1][:box]
       # box hostname
-      node.vm.hostname = HOSTNAME_PREFIX + '-' + hosts[machine_id - 1][:name]
+      node.vm.hostname = HOSTNAME_PREFIX + '-' + hosts[machine_id - 1][:name] \
+              + '.' + DOMAIN
+
       # box extra interface
       node.vm.network hosts[machine_id - 1][:net], ip: hosts[machine_id - 1][:ip]
 
@@ -73,10 +78,12 @@ Vagrant.configure(2) do |config|
           end # end groups
 
           # run the provisionner
+
           # ansible.verbose = 'v'
           # ansible.extra_vars = {users_debug: 'True'}
-          ansible.limit = 'all'
+          # ansible.limit = 'all'
           ansible.playbook = 'test.yml'
+
         end #ansible vm.provision
 
       end # if machine_id == N
